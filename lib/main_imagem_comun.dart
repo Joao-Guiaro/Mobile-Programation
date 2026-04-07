@@ -15,13 +15,9 @@ class MyApp extends StatelessWidget {
           title: const Text("Texto e Imagem"),
         ),
         body: Center(
-          child: Row(
+          child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
-                "Bem-Vindo",
-                style: TextStyle(color: Colors.blue, fontSize: 24),
-              ),
               const SizedBox(height: 20,),
               Image.asset(
                 'assets/images/Chupim.jpg',
