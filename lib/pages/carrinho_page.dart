@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hello_world/main_GoRouter.dart';
+import 'package:hello_world/main.dart';
 
 // PÁGINA DO CARRINHO
 class CarrinhoPage extends StatelessWidget { // Tela responsável por exibir todos os produtos adicionados ao carrinho.

@@ -29,7 +29,6 @@ environment:
 # versions available, run `flutter pub outdated`.
 dependencies:
   flutter:
-  
     sdk: flutter
   go_router: ^14.0.1
 
@@ -63,8 +62,6 @@ flutter:
 
   assets:
     - assets/images/
-    - assets/icons/
-    - assets/data/
 
   # To add assets to your application, add an assets section, like this:
   # assets:
