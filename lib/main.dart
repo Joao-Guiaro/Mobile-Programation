@@ -1,245 +1,827 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'pages/produto_page.dart';
-import 'pages/carrinho_page.dart';
 
-// ─── MODELO DO PRODUTO ────────────────────────────────────────────────────
-class Suculenta {
-  final int id;
-  final String nome;
-  final String nomeCientifico;
-  final String emoji;
-  final double preco;
-  final String descricao;
+void main() {
+  runApp(const MeuApp());
+}
 
-  const Suculenta({
-    required this.id,
-    required this.nome,
-    required this.nomeCientifico,
-    required this.emoji,
-    required this.preco,
+// ======================================================
+// MODELO DE MOVIMENTAÇÃO
+// ======================================================
+
+class Movimentacao {
+  String descricao;
+  double valor;
+  bool entrada;
+  String data;
+
+  Movimentacao({
     required this.descricao,
+    required this.valor,
+    required this.entrada,
+    required this.data,
   });
 }
 
-// ─── CATÁLOGO (4 ESPÉCIES) ────────────────────────────────────────────────
-const List<Suculenta> produtos = [
-  Suculenta(
-    id: 1,
-    nome: 'Roseta-de-Pedra',
-    nomeCientifico: 'Echeveria elegans',
-    emoji: '🌸',
-    preco: 18.90,
-    descricao: 'Suculenta compacta com folhas em roseta verde-azuladas.',
-  ),
-  Suculenta(
-    id: 2,
-    nome: 'Muda feijão',
-    nomeCientifico: 'Haworthiopsis attenuata',
-    emoji: '🌱',
-    preco: 5.00,
-    descricao: 'O principal grão das refeições brasileiras.',
-  ),
-  Suculenta(
-    id: 3,
-    nome: 'Babosa',
-    nomeCientifico: 'Aloe vera',
-    emoji: '🌿',
-    preco: 32.00,
-    descricao: 'Gel das folhas hidrata a pele e alivia queimaduras.',
-  ),
-  Suculenta(
-    id: 4,
-    nome: 'Cacto-Ouriço',
-    nomeCientifico: 'Echinocactus grusonii',
-    emoji: '🌵',
-    preco: 15.00,
-    descricao: 'praticamente não precisa de água.',
-  ),
-];
-
-// ─── CARRINHO SIMPLES ─────────────────────────────────────────────────────
-class ItemCarrinho {
-  final Suculenta produto;
-  int quantidade;
-
-  ItemCarrinho(this.produto, this.quantidade);
-}
-
-class CarrinhoController extends ChangeNotifier {
-  List<ItemCarrinho> itens = [];
-
-  void adicionar(Suculenta produto) {
-    // Verifica se o produto já está no carrinho
-    for (var item in itens) {
-      if (item.produto.id == produto.id) {
-        item.quantidade++;
-        notifyListeners();
-        return;
-      }
-    }
-    // Se não estiver, adiciona novo item
-    itens.add(ItemCarrinho(produto, 1));
-    notifyListeners();
-  }
-
-  void remover(Suculenta produto) {
-    for (int i = 0; i < itens.length; i++) {
-      if (itens[i].produto.id == produto.id) {
-        if (itens[i].quantidade > 1) {
-          itens[i].quantidade--;
-        } else {
-          itens.removeAt(i);
-        }
-        notifyListeners();
-        return;
-      }
-    }
-  }
-
-  void removerItemCompleto(Suculenta produto) {
-    itens.removeWhere((item) => item.produto.id == produto.id);
-    notifyListeners();
-  }
-
-  double get total {
-    double soma = 0;
-    for (var item in itens) {
-      soma += item.produto.preco * item.quantidade;
-    }
-    return soma;
-  }
-
-  int get totalItens {
-    int soma = 0;
-    for (var item in itens) {
-      soma += item.quantidade;
-    }
-    return soma;
-  }
-
-  void limpar() {
-    itens.clear();
-    notifyListeners();
-  }
-}
-
-final carrinho = CarrinhoController();
-
-// ─── ROTAS ────────────────────────────────────────────────────────────────
-final GoRouter router = GoRouter(
-  initialLocation: '/',
-  routes: [
-    GoRoute(path: '/', builder: (context, state) => const HomePage()),
-    GoRoute(
-      path: '/produto/:id',
-      builder: (context, state) {
-        final id = int.parse(state.pathParameters['id']!);
-        final produto = produtos.firstWhere((p) => p.id == id);
-         return ProdutoPage(produto: produto);
-    
-      },
-    ),
-    GoRoute(path: '/carrinho', builder: (context, state) => const CarrinhoPage()),
-  ],
-);
-
-void main() => runApp(const MeuApp());
+// ======================================================
+// APP
+// ======================================================
 
 class MeuApp extends StatelessWidget {
   const MeuApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'Suculentas & Cia',
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
+      title: 'Controle Financeiro',
+
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF4A7C59)),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.red,
+        ),
         useMaterial3: true,
       ),
-      routerConfig: router,
+
+      home: const HomePage(),
     );
   }
 }
 
-// ─── HOME PAGE ────────────────────────────────────────────────────────────
-class HomePage extends StatelessWidget {
+// ======================================================
+// HOME PAGE
+// ======================================================
+
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('🌵 Suculentas & Cia'),
-        backgroundColor: const Color(0xFF4A7C59),
-        foregroundColor: Colors.white,
-        actions: [
-          ListenableBuilder(
-            listenable: carrinho,
-            builder: (context, _) {
-              return Stack(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.shopping_cart_outlined),
-                    onPressed: () => context.push('/carrinho'),
+  State<HomePage> createState() => _HomePageState();
+}
+
+// ======================================================
+// ESTADO DA HOME
+// ======================================================
+
+class _HomePageState extends State<HomePage> {
+
+  // Lista de movimentações
+  final List<Movimentacao> movimentacoes = [
+
+    Movimentacao(
+      descricao: 'Salário',
+      valor: 3000,
+      entrada: true,
+      data: '01/08/2026',
+    ),
+
+    Movimentacao(
+      descricao: 'Mercado',
+      valor: 120,
+      entrada: false,
+      data: 'Hoje',
+    ),
+
+    Movimentacao(
+      descricao: 'Internet',
+      valor: 100,
+      entrada: false,
+      data: '02/08/2026',
+    ),
+
+    Movimentacao(
+      descricao: 'Transporte',
+      valor: 80,
+      entrada: false,
+      data: '03/08/2026',
+    ),
+  ];
+
+  // ====================================================
+  // CALCULAR ENTRADAS
+  // ====================================================
+
+  double get totalEntradas {
+
+    double total = 0;
+
+    for (var movimentacao in movimentacoes) {
+
+      if (movimentacao.entrada) {
+        total += movimentacao.valor;
+      }
+
+    }
+
+    return total;
+  }
+
+  // ====================================================
+  // CALCULAR SAÍDAS
+  // ====================================================
+
+  double get totalSaidas {
+
+    double total = 0;
+
+    for (var movimentacao in movimentacoes) {
+
+      if (!movimentacao.entrada) {
+        total += movimentacao.valor;
+      }
+
+    }
+
+    return total;
+  }
+
+  // ====================================================
+  // CALCULAR SALDO
+  // ====================================================
+
+  double get saldo {
+
+    return totalEntradas - totalSaidas;
+
+  }
+
+  // ====================================================
+  // ADICIONAR MOVIMENTAÇÃO
+  // ====================================================
+
+  void adicionarMovimentacao(
+    String descricao,
+    double valor,
+    bool entrada,
+  ) {
+
+    setState(() {
+
+      movimentacoes.insert(
+        0,
+
+        Movimentacao(
+          descricao: descricao,
+          valor: valor,
+          entrada: entrada,
+          data: 'Hoje',
+        ),
+      );
+
+    });
+
+  }
+
+  // ====================================================
+  // JANELA PARA ADICIONAR
+  // ====================================================
+
+  void abrirAdicionar() {
+
+    showModalBottomSheet(
+      context: context,
+
+      builder: (context) {
+
+        return SafeArea(
+
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+
+              children: [
+
+                const Text(
+                  'Adicionar movimentação',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
-                  if (carrinho.totalItens > 0)
-                    Positioned(
-                      right: 6,
-                      top: 6,
-                      child: Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: const BoxDecoration(
-                          color: Colors.orange,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Text(
-                          '${carrinho.totalItens}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // ========================================
+                // ENTRADA
+                // ========================================
+
+                SizedBox(
+                  width: double.infinity,
+
+                  child: ElevatedButton.icon(
+
+                    onPressed: () {
+
+                      Navigator.pop(context);
+
+                      abrirFormulario(true);
+
+                    },
+
+                    icon: const Icon(
+                      Icons.arrow_downward,
+                      color: Colors.green,
                     ),
-                ],
-              );
-            },
+
+                    label: const Text(
+                      'Adicionar Entrada',
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                // ========================================
+                // SAÍDA
+                // ========================================
+
+                SizedBox(
+                  width: double.infinity,
+
+                  child: ElevatedButton.icon(
+
+                    onPressed: () {
+
+                      Navigator.pop(context);
+
+                      abrirFormulario(false);
+
+                    },
+
+                    icon: const Icon(
+                      Icons.arrow_upward,
+                      color: Colors.red,
+                    ),
+
+                    label: const Text(
+                      'Adicionar Saída',
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+              ],
+            ),
           ),
-        ],
-      ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: produtos.length,
-        itemBuilder: (context, index) {
-          final produto = produtos[index];
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            child: ListTile(
-              leading: Text(produto.emoji, style: const TextStyle(fontSize: 36)),
-              title: Text(produto.nome),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+        );
+      },
+    );
+  }
+
+  // ====================================================
+  // FORMULÁRIO
+  // ====================================================
+
+  void abrirFormulario(bool entrada) {
+
+    final descricaoController =
+        TextEditingController();
+
+    final valorController =
+        TextEditingController();
+
+    showDialog(
+
+      context: context,
+
+      builder: (context) {
+
+        return AlertDialog(
+
+          title: Text(
+            entrada
+                ? 'Nova Entrada'
+                : 'Nova Saída',
+          ),
+
+          content: Column(
+
+            mainAxisSize: MainAxisSize.min,
+
+            children: [
+
+              // DESCRIÇÃO
+              TextField(
+
+                controller: descricaoController,
+
+                decoration: const InputDecoration(
+                  labelText: 'Descrição',
+                  hintText: 'Ex: Salário',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+
+              const SizedBox(height: 15),
+
+              // VALOR
+              TextField(
+
+                controller: valorController,
+
+                keyboardType:
+                    const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+
+                decoration: const InputDecoration(
+                  labelText: 'Valor',
+                  hintText: 'Ex: 500',
+                  prefixText: 'R\$ ',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+
+            ],
+          ),
+
+          actions: [
+
+            // CANCELAR
+            TextButton(
+
+              onPressed: () {
+                Navigator.pop(context);
+              },
+
+              child: const Text(
+                'Cancelar',
+              ),
+            ),
+
+            // ADICIONAR
+            ElevatedButton(
+
+              onPressed: () {
+
+                final descricao =
+                    descricaoController.text;
+
+                final valor =
+                    double.tryParse(
+                      valorController.text
+                          .replaceAll(',', '.'),
+                    );
+
+                if (descricao.isEmpty ||
+                    valor == null ||
+                    valor <= 0) {
+
+                  return;
+
+                }
+
+                adicionarMovimentacao(
+                  descricao,
+                  valor,
+                  entrada,
+                );
+
+                Navigator.pop(context);
+              },
+
+              child: const Text(
+                'Adicionar',
+              ),
+            ),
+
+          ],
+        );
+      },
+    );
+  }
+
+  // ====================================================
+  // HOME
+  // ====================================================
+
+  @override
+  Widget build(BuildContext context) {
+
+    return Scaffold(
+
+      // ==================================================
+      // MENU LATERAL
+      // ==================================================
+
+      drawer: Drawer(
+
+        child: ListView(
+
+          padding: EdgeInsets.zero,
+
+          children: [
+
+            // CABEÇALHO
+            DrawerHeader(
+
+              decoration: const BoxDecoration(
+                color: Colors.red,
+              ),
+
+              child: Column(
+
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+
+                children: const [
+
+                  Icon(
+                    Icons.account_balance_wallet,
+                    color: Colors.white,
+                    size: 45,
+                  ),
+
+                  SizedBox(height: 10),
+
                   Text(
-                    produto.nomeCientifico,
-                    style: const TextStyle(
-                      fontStyle: FontStyle.italic,
-                      fontSize: 12,
-                      color: Colors.grey,
+                    'Controle Financeiro',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Text('R\$ ${produto.preco.toStringAsFixed(2)}'),
+
+                  Text(
+                    'Organize seu dinheiro',
+                    style: TextStyle(
+                      color: Colors.white70,
+                    ),
+                  ),
+
                 ],
               ),
-              isThreeLine: true,
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => context.go('/produto/${produto.id}'),
             ),
-          );
-        },
+
+            // INÍCIO
+            ListTile(
+
+              leading: const Icon(
+                Icons.home,
+              ),
+
+              title: const Text(
+                'Início',
+              ),
+
+              onTap: () {
+
+                Navigator.pop(context);
+
+              },
+            ),
+
+            // MOVIMENTAÇÕES
+            ListTile(
+
+              leading: const Icon(
+                Icons.receipt_long,
+              ),
+
+              title: const Text(
+                'Movimentações',
+              ),
+
+              onTap: () {
+
+                Navigator.pop(context);
+
+              },
+            ),
+
+            // RELATÓRIOS
+            ListTile(
+
+              leading: const Icon(
+                Icons.bar_chart,
+              ),
+
+              title: const Text(
+                'Relatórios',
+              ),
+
+              onTap: () {
+
+                Navigator.pop(context);
+
+              },
+            ),
+
+            // CONFIGURAÇÕES
+            ListTile(
+
+              leading: const Icon(
+                Icons.settings,
+              ),
+
+              title: const Text(
+                'Configurações',
+              ),
+
+              onTap: () {
+
+                Navigator.pop(context);
+
+              },
+            ),
+
+          ],
+        ),
+      ),
+
+      // ==================================================
+      // TOPO
+      // ==================================================
+
+      appBar: AppBar(
+
+        title: const Text(
+          'Controle Financeiro',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+
+        backgroundColor: Colors.red,
+
+        foregroundColor: Colors.white,
+
+      ),
+
+      // ==================================================
+      // CORPO
+      // ==================================================
+
+      body: Padding(
+
+        padding: const EdgeInsets.all(16),
+
+        child: Column(
+
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
+
+          children: [
+
+            // ==================================================
+            // SALDO
+            // ==================================================
+
+            Card(
+            
+              color: Colors.green,
+
+              child: Padding(
+
+                padding: const EdgeInsets.all(20),
+
+                child: Column(
+
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
+
+                  children: [
+
+                    const Text(
+                      'Saldo atual',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    Text(
+
+                      'R\$ ${saldo.toStringAsFixed(2).replaceAll('.', ',')}',
+
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // ==================================================
+            // ENTRADAS E SAÍDAS
+            // ==================================================
+
+            Row(
+
+              children: [
+
+                // ENTRADAS
+                Expanded(
+
+                  child: Card(
+
+                    child: Padding(
+
+                      padding:
+                          const EdgeInsets.all(16),
+
+                      child: Column(
+
+                        children: [
+
+                          const Icon(
+                            Icons.arrow_downward,
+                            color: Colors.green,
+                            size: 30,
+                          ),
+
+                          const SizedBox(height: 8),
+
+                          const Text(
+                            'Entradas',
+                          ),
+
+                          const SizedBox(height: 5),
+
+                          Text(
+
+                            'R\$ ${totalEntradas.toStringAsFixed(2).replaceAll('.', ',')}',
+
+                            style: const TextStyle(
+                              color: Colors.green,
+                              fontWeight:
+                                  FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                          ),
+
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 10),
+
+                // SAÍDAS
+                Expanded(
+
+                  child: Card(
+
+                    child: Padding(
+
+                      padding:
+                          const EdgeInsets.all(16),
+
+                      child: Column(
+
+                        children: [
+
+                          const Icon(
+                            Icons.arrow_upward,
+                            color: Colors.red,
+                            size: 30,
+                          ),
+
+                          const SizedBox(height: 8),
+
+                          const Text(
+                            'Saídas',
+                          ),
+
+                          const SizedBox(height: 5),
+
+                          Text(
+
+                            'R\$ ${totalSaidas.toStringAsFixed(2).replaceAll('.', ',')}',
+
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontWeight:
+                                  FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                          ),
+
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+              ],
+            ),
+
+            const SizedBox(height: 25),
+
+            // ==================================================
+            // TÍTULO
+            // ==================================================
+
+            const Text(
+
+              'Últimas movimentações',
+
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            // ==================================================
+            // LISTA
+            // ==================================================
+
+            Expanded(
+
+              child: ListView.builder(
+
+                itemCount: movimentacoes.length,
+
+                itemBuilder: (context, index) {
+
+                  final movimentacao =
+                      movimentacoes[index];
+
+                  return ListTile(
+
+                    leading: CircleAvatar(
+
+                      backgroundColor:
+                          movimentacao.entrada
+                              ? Colors.green.shade100
+                              : Colors.red.shade100,
+
+                      child: Icon(
+
+                        movimentacao.entrada
+                            ? Icons.arrow_downward
+                            : Icons.arrow_upward,
+
+                        color:
+                            movimentacao.entrada
+                                ? Colors.green
+                                : Colors.red,
+                      ),
+                    ),
+
+                    title: Text(
+                      movimentacao.descricao,
+                    ),
+
+                    subtitle: Text(
+                      movimentacao.data,
+                    ),
+
+                    trailing: Text(
+
+                      '${movimentacao.entrada ? '+' : '-'} '
+                      'R\$ ${movimentacao.valor.toStringAsFixed(2).replaceAll('.', ',')}',
+
+                      style: TextStyle(
+
+                        color:
+                            movimentacao.entrada
+                                ? Colors.green
+                                : Colors.red,
+
+                        fontWeight:
+                            FontWeight.bold,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+
+      // ==================================================
+      // BOTÃO +
+      // ==================================================
+
+      floatingActionButton:
+
+          FloatingActionButton(
+
+        backgroundColor: Colors.red,
+
+        foregroundColor: Colors.white,
+
+        onPressed: abrirAdicionar,
+
+        child: const Icon(
+          Icons.add,
+        ),
       ),
     );
   }
