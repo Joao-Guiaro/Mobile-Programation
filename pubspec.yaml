@@ -41,6 +41,8 @@ dependencies:
   latlong2: ^0.10.1
   flutter_blue_plus: ^2.0.3
   audioplayers: ^6.8.1
+  sensors_plus: ^6.1.1
+  sqflite: ^2.4.4
 
 dev_dependencies:
   flutter_test:
