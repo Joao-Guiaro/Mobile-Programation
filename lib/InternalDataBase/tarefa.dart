@@ -9,7 +9,7 @@ class Tarefa{
     required this.descricao,
     required this.prioridade,
     required this.status,
-  })
+  });
 
   Map<String, dynamic> toMap(){
     return {
