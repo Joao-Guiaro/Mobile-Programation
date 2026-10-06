@@ -1,22 +1,19 @@
 import 'package:flutter/material.dart';
 
-import 'InternalDataBase/tarefa.dart';
-import 'InternalDataBase/database_helper.dart';
-
 void main() {
-  runApp(const MeuAplicativo());
+  runApp(const MyApp());
 }
 
-class MeuAplicativo extends StatelessWidget {
-  const MeuAplicativo({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
+  @override                               //Configura o MaterialApp. Definimos o título, removemos a etiqueta de debug
+  Widget build(BuildContext context) {   //E aplicamos um tema baseado na cor verde (0xFF4CAF50), ativando o Material 3.
+    return MaterialApp(                 //O Material 3 é a próxima geração do design system do Google
+      title: 'Minhas Tarefas',         //Trazendo uma aparência mais moderna e personalizável para os aplicativos Flutter
       debugShowCheckedModeBanner: false,
-      title: 'Tarefas',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF4CAF50)),
         useMaterial3: true,
       ),
       home: const TarefasPage(),
@@ -24,212 +21,135 @@ class MeuAplicativo extends StatelessWidget {
   }
 }
 
-class TarefasPage extends StatefulWidget {
+class TarefasPage extends StatefulWidget { //O StatefulWiget permite que o dados modificados apareção atualizados na tela
   const TarefasPage({super.key});
 
   @override
-  State<TarefasPage> createState() => _TarefasPageState();
+  State<TarefasPage> createState() => _TarefasPageState(); //Cria o objeto de estado associado a este widget.
 }
 
-class _TarefasPageState extends State<TarefasPage> {
-  final DatabaseHelper dbHelper = DatabaseHelper();
+class _TarefasPageState extends State<TarefasPage> { //logica do estado da pagina
+  final List<Map<String, dynamic>> _tarefas = [     //Lista de tarefas, onde cada tarefa é representada por um mapa contendo o título e o status de conclusão
+    {'titulo': 'Fazer a apresentação', 'concluida': true},
+    {'titulo': 'Terminar as páginas', 'concluida': false},
+    {'titulo': 'Terminar a ficha da Carol', 'concluida': false},
+  ];
 
-  final TextEditingController descricaoController = TextEditingController();
+  final TextEditingController _controller = TextEditingController(); //Controller que permite ler o texto digitado pelo usuario
 
-  String prioridadeSelecionada = 'Média';
-
-  List<Tarefa> tarefas = [];
-
-  @override
-  void initState() {
-    super.initState();
-
-    carregarTarefas();
+  void _adicionarTarefa() {
+    showDialog(
+      context: context,
+      builder: (context){
+        return AlertDialog(
+          title: const Text('Nova Tarefa'),
+          content: TextField(
+            controller: _controller,
+            autofocus: true,
+            decoration: const InputDecoration(
+              hintText: 'Digite o nome da tarefa',
+            ),
+            onSubmitted: (_) => _salvarTarefa(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                _controller.clear();
+                Navigator.pop(context);
+              },
+              child: const Text('Cancelar'),
+            )
+          ],
+        );
+      }
+    );
   }
 
-  // READ
-  Future<void> carregarTarefas() async {
-    final resultado = await dbHelper.listarTarefas();
-
-    setState(() {
-      tarefas = resultado;
-    });
-  }
-
-  // CREATE
-  Future<void> adicionarTarefa() async {
-    final descricao = descricaoController.text.trim();
-
-    if (descricao.isEmpty) {
-      return;
+  void _salvarTarefa() { //Função para salvar a tarefa na lista
+    final texto = _controller.text.trim(); //Obtém o texto digitado pelo usuário e remove espaços em branco extras
+    if (texto.isNotEmpty) { //Verifica se o texto não está vazio
+      setState(() { //Chama setState para atualizar a interface do usuário com a nova tarefa
+        _tarefas.add({'titulo': texto, 'concluida': false}); //adiciona um novo mapa a lista
+      });
+      _controller.clear(); //Limpa o campo de texto para a próxima entrada
+      Navigator.pop(context); //Fecha a janela de diálogo após adicionar a tarefa
     }
+  }
 
-    final tarefa = Tarefa(
-      descricao: descricao,
-      prioridade: prioridadeSelecionada,
-      status: 'Pendente',
-    );
-
-    await dbHelper.inserirTarefa(tarefa);
-
-    descricaoController.clear();
-
+  void _excluirTarefa(int index) { //Função para excluir uma tarefa da lista, recebe o índice da tarefa a ser removida
     setState(() {
-      prioridadeSelecionada = 'Média';
+      _tarefas.removeAt(index); //Remove a tarefa da lista usando o método removeAt, que remove o elemento no índice especificado
     });
-
-    await carregarTarefas();
   }
 
-  // UPDATE
-  Future<void> concluirTarefa(Tarefa tarefa) async {
-    final tarefaAtualizada = Tarefa(
-      id: tarefa.id,
-      descricao: tarefa.descricao,
-      prioridade: tarefa.prioridade,
-      status: 'Concluída',
-    );
-
-    await dbHelper.atualizarTarefa(tarefaAtualizada);
-
-    await carregarTarefas();
-  }
-
-  // DELETE
-  Future<void> excluirTarefa(int id) async {
-    await dbHelper.excluirTarefa(id);
-
-    await carregarTarefas();
+  void _alternarConclusao(int index) { //Função para alternar o status de conclusão de uma tarefa, recebe o índice da tarefa a ser atualizada
+    setState(() {
+      _tarefas[index]['concluida'] = !_tarefas[index]['concluida'];//Inverte o valor booleano do campo 'concluida' da tarefa, marcando-a como concluída ou não concluída
+    });
   }
 
   @override
+  void dispose() { //Chamado quando o widget é removido permanentemente da árvore.
+    _controller.dispose(); //Libera os recursos usados pelo TextEditingController para evitar vazamentos de memória
+    super.dispose(); //Chama o método dispose da classe pai para garantir que qualquer limpeza adicional seja realizada
+  }
+
+  @override                                     //Construção da interface principal
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Minhas Tarefas')),
-
-      body: Column(
-        children: [
-          // FORMULÁRIO
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                TextField(
-                  controller: descricaoController,
-                  decoration: const InputDecoration(
-                    labelText: 'Descrição da tarefa',
-                    border: OutlineInputBorder(),
+      appBar: AppBar(
+        title: const Text(
+          'Minhas Tarefas',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
+        backgroundColor: const Color(0xFF4CAF50),
+      ),
+      body: _tarefas.isEmpty
+          ? const Center(
+              child: Text(
+                'Nenhuma tarefa ainda.\nToque em + para adicionar!',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+            )
+          : ListView.builder( //Constrói uma lista de tarefas usando ListView.builder, que é eficiente para listas longas, pois constrói apenas os itens visíveis na tela
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              itemCount: _tarefas.length, //Especifica o número de itens na lista, que é igual ao número de tarefas
+              itemBuilder: (context, index) { //Função que constrói cada item da lista, recebe o contexto e o índice do item a ser construído
+                final tarefa = _tarefas[index];
+                return ListTile( //Cada tarefa é representada por um ListTile, que inclui um Checkbox para marcar a conclusão, o título da tarefa e um botão de exclusão
+                  leading: Checkbox(
+                    value: tarefa['concluida'],
+                    activeColor: const Color(0xFF4CAF50),
+                    onChanged: (_) => _alternarConclusao(index),
                   ),
-                ),
-
-                const SizedBox(height: 12),
-
-                DropdownButtonFormField<String>(
-                  value: prioridadeSelecionada,
-                  decoration: const InputDecoration(
-                    labelText: 'Prioridade',
-                    border: OutlineInputBorder(),
+                  title: Text(
+                    tarefa['titulo'],
+                    style: TextStyle(
+                      fontSize: 16,
+                      decoration: tarefa['concluida']
+                          ? TextDecoration.lineThrough
+                          : null,
+                      color: tarefa['concluida'] ? Colors.grey : Colors.black87,
+                    ),
                   ),
-                  items: const [
-                    DropdownMenuItem(value: 'Baixa', child: Text('Baixa')),
-                    DropdownMenuItem(value: 'Média', child: Text('Média')),
-                    DropdownMenuItem(value: 'Alta', child: Text('Alta')),
-                  ],
-                  onChanged: (valor) {
-                    if (valor != null) {
-                      setState(() {
-                        prioridadeSelecionada = valor;
-                      });
-                    }
-                  },
-                ),
-
-                const SizedBox(height: 12),
-
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: adicionarTarefa,
-                    child: const Text('ADICIONAR TAREFA'),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                    onPressed: () => _excluirTarefa(index),
                   ),
-                ),
-              ],
+                );
+              },
             ),
-          ),
-
-          const Divider(),
-
-          // LISTAGEM
-          Expanded(
-            child: tarefas.isEmpty
-                ? const Center(child: Text('Nenhuma tarefa cadastrada.'))
-                : ListView.builder(
-                    itemCount: tarefas.length,
-                    itemBuilder: (context, index) {
-                      final tarefa = tarefas[index];
-
-                      return Card(
-                        margin: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 4,
-                        ),
-
-                        child: ListTile(
-                          leading: CircleAvatar(child: Text('${tarefa.id}')),
-
-                          title: Text(
-                            tarefa.descricao,
-                            style: TextStyle(
-                              decoration: tarefa.status == 'Concluída'
-                                  ? TextDecoration.lineThrough
-                                  : null,
-                            ),
-                          ),
-
-                          subtitle: Text(
-                            'Prioridade: ${tarefa.prioridade}\n'
-                            'Status: ${tarefa.status}',
-                          ),
-
-                          isThreeLine: true,
-
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // Concluir
-                              if (tarefa.status != 'Concluída')
-                                IconButton(
-                                  icon: const Icon(Icons.check),
-                                  tooltip: 'Concluir',
-                                  onPressed: () {
-                                    concluirTarefa(tarefa);
-                                  },
-                                ),
-
-                              // Excluir
-                              IconButton(
-                                icon: const Icon(Icons.delete),
-                                tooltip: 'Excluir',
-                                onPressed: () {
-                                  excluirTarefa(tarefa.id!);
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-          ),
-        ],
+      floatingActionButton: FloatingActionButton(  //Botão flutuante para adicionar novas tarefas, que chama a função _adicionarTarefa quando pressionado
+        onPressed: _adicionarTarefa,
+        backgroundColor: const Color(0xFF4CAF50),
+        foregroundColor: Colors.white,
+        child: const Icon(Icons.add),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    descricaoController.dispose();
-
-    super.dispose();
   }
 }
